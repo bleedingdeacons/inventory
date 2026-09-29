@@ -1,0 +1,143 @@
+root = true
+
+[*.cs]
+indent_style = tab
+indent_size = 4
+tab_width = 4
+end_of_line = lf
+insert_final_newline = true
+charset = utf-8
+trim_trailing_whitespace = true
+
+# Modern placement — usings outside the namespace (also disables the SA1200 conflict).
+csharp_using_directive_placement = outside_namespace:warning
+
+# Missing XML doc comment. The library projects set GenerateDocumentationFile,
+# which turns this on, but we do not require every public member to be
+# documented (StyleCop's SA1600 family is likewise disabled below). Silenced so
+# `dotnet format --verify-no-changes` does not treat it as a pending fix.
+dotnet_diagnostic.CS1591.severity = none
+
+# ---------------------------------------------------------------------------
+# StyleCop.Analyzers — disabled rules
+#
+# These conflict with the established house style or have no meaningful
+# auto-fix, so `dotnet format` should not churn the code to satisfy them.
+# Everything NOT listed here stays at its default (warning) so dotnet format
+# fixes it (indentation via tabs, blank lines, spacing, etc.).
+# ---------------------------------------------------------------------------
+
+# 'this.' prefix is not used
+dotnet_diagnostic.SA1101.severity = none
+# usings live outside the namespace (see placement above)
+dotnet_diagnostic.SA1200.severity = none
+# #region / #endregion are used intentionally
+dotnet_diagnostic.SA1124.severity = none
+# private fields are prefixed with an underscore
+dotnet_diagnostic.SA1309.severity = none
+# single-line statements without braces are allowed
+dotnet_diagnostic.SA1503.severity = none
+dotnet_diagnostic.SA1519.severity = none
+dotnet_diagnostic.SA1520.severity = none
+# don't reflow parameter / generic-constraint layout
+dotnet_diagnostic.SA1116.severity = none
+dotnet_diagnostic.SA1117.severity = none
+dotnet_diagnostic.SA1127.severity = none
+# don't reorder members
+dotnet_diagnostic.SA1201.severity = none
+dotnet_diagnostic.SA1202.severity = none
+dotnet_diagnostic.SA1203.severity = none
+dotnet_diagnostic.SA1204.severity = none
+dotnet_diagnostic.SA1214.severity = none
+# trailing-comma preference
+dotnet_diagnostic.SA1413.severity = none
+# 'required' modifier order — StyleCop 1.1.118 predates the C# 'required'
+# keyword and wrongly wants it before 'public'; the correct order is
+# 'public required'.
+dotnet_diagnostic.SA1206.severity = none
+# collection-expression bracket spacing
+dotnet_diagnostic.SA1010.severity = none
+# XML-doc analysis disabled note
+dotnet_diagnostic.SA0001.severity = none
+
+# Documentation rules ENABLED for the library (Inventory + Inventory.Maui). The test
+# project and the example app are exempted at the bottom of this file.
+#   SA1600 — public members must carry a <summary>
+#   SA1629 — documentation text must end with a period
+#   SA1633 — every file must carry the copyright header (text in stylecop.json)
+dotnet_diagnostic.SA1600.severity = warning
+dotnet_diagnostic.SA1629.severity = warning
+dotnet_diagnostic.SA1633.severity = warning
+
+# Other documentation rules stay off — param / returns / type-param docs and
+# property / constructor wording are not required.
+dotnet_diagnostic.SA1601.severity = none
+dotnet_diagnostic.SA1602.severity = none
+dotnet_diagnostic.SA1611.severity = none
+dotnet_diagnostic.SA1614.severity = none
+dotnet_diagnostic.SA1615.severity = none
+dotnet_diagnostic.SA1618.severity = none
+dotnet_diagnostic.SA1623.severity = none
+dotnet_diagnostic.SA1642.severity = none
+
+# ---------------------------------------------------------------------------
+# Meziantou.Analyzer — disabled rules (no auto-fix / not applicable here)
+# ---------------------------------------------------------------------------
+
+# prefer returning a collection abstraction
+dotnet_diagnostic.MA0016.severity = none
+# method is too long
+dotnet_diagnostic.MA0051.severity = none
+
+[*.{csproj,props,targets}]
+indent_style = space
+indent_size = 2
+
+[*.{yml,yaml,json,md}]
+indent_style = space
+indent_size = 2
+
+# Documentation rules (summaries / period / file header) are not required in the
+# test project or the example app — only the public library API is documented.
+[TheBleedingDeacons.Inventory.Tests/**.cs]
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1629.severity = none
+dotnet_diagnostic.SA1633.severity = none
+
+# xUnit1051 asks every call that accepts a CancellationToken to thread
+# TestContext.Current.CancellationToken through it. These are mock-backed unit
+# tests that complete instantly against an in-memory handler, so the
+# cancellation-responsiveness benefit is nil — silence the rule here rather
+# than thread a token through every client call. (`dotnet format
+# --verify-no-changes` in CI reports it as a change it cannot auto-fix, so it
+# must be quieted, not just left as a warning.)
+dotnet_diagnostic.xUnit1051.severity = none
+
+# ConfigureAwait(false) is library code's business. xUnit's own analyzer
+# (xUnit1030) asks tests NOT to use it, so Meziantou's opposite advice is
+# silenced in test code rather than argued with line by line.
+dotnet_diagnostic.MA0004.severity = none
+
+[example/**.cs]
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1629.severity = none
+dotnet_diagnostic.SA1633.severity = none
+dotnet_diagnostic.SA1636.severity = none
+# A console demo with top-level statements: no SynchronizationContext to
+# avoid, and its string comparisons are of fixed ASCII arguments.
+dotnet_diagnostic.MA0004.severity = none
+dotnet_diagnostic.MA0006.severity = none
+dotnet_diagnostic.MA0047.severity = none
+
+# The executable specification: Reqnroll step bindings and support code,
+# documented by the feature files they bind rather than by XML comments.
+[TheBleedingDeacons.Inventory.Specs/**.cs]
+dotnet_diagnostic.SA1600.severity = none
+dotnet_diagnostic.SA1629.severity = none
+dotnet_diagnostic.SA1633.severity = none
+dotnet_diagnostic.xUnit1051.severity = none
+
+# ConfigureAwait(false) is library code's business. xUnit's own analyzer
+# (xUnit1030) asks tests NOT to use it, so Meziantou's opposite advice is
+# silenced in test code rather than argued with line by line.
+dotnet_diagnostic.MA0004.severity = none

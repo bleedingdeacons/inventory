@@ -1,0 +1,138 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Declared rather than inherited, as in freedom-sharp: nothing here writes.
+permissions:
+  contents: read
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      # Unlike freedom-sharp's, the test project references Inventory.Maui (for
+      # the device label), and restoring that restores its Android target,
+      # which the SDK refuses to evaluate without the workload. Only the
+      # net10.0 build of it is compiled here; the maui job builds Android.
+      - name: Install the MAUI Android workload
+        run: dotnet workload install maui-android
+
+      - name: Restore local tools (coverlet.console)
+        run: dotnet tool restore
+
+      - name: Build library, tests and specs
+        run: |
+          dotnet build TheBleedingDeacons.Inventory/TheBleedingDeacons.Inventory.csproj --configuration Release
+          dotnet build TheBleedingDeacons.Inventory.Tests/TheBleedingDeacons.Inventory.Tests.csproj --configuration Debug
+          dotnet build TheBleedingDeacons.Inventory.Specs/TheBleedingDeacons.Inventory.Specs.csproj --configuration Debug
+
+      # Formatting and the StyleCop / Meziantou analyzers (.editorconfig). The
+      # MAUI project is formatted in the maui job.
+      - name: Verify formatting (dotnet format --verify-no-changes)
+        run: |
+          dotnet format TheBleedingDeacons.Inventory/TheBleedingDeacons.Inventory.csproj --verify-no-changes
+          dotnet format TheBleedingDeacons.Inventory.Tests/TheBleedingDeacons.Inventory.Tests.csproj --verify-no-changes
+          dotnet format TheBleedingDeacons.Inventory.Specs/TheBleedingDeacons.Inventory.Specs.csproj --verify-no-changes
+
+      # coverlet.console around the Microsoft.Testing.Platform executable, as in
+      # freedom-sharp: coverlet's collector hooks VSTest, which MTP does not use.
+      # The core library only: the MAUI half is platform glue a test host
+      # cannot run.
+      - name: Test with coverage
+        run: >
+          dotnet coverlet TheBleedingDeacons.Inventory.Tests/bin/Debug/net10.0/TheBleedingDeacons.Inventory.Tests.dll
+          --target dotnet
+          --targetargs "TheBleedingDeacons.Inventory.Tests/bin/Debug/net10.0/TheBleedingDeacons.Inventory.Tests.dll"
+          --format cobertura
+          --output coverage/coverage.cobertura.xml
+          --include "[TheBleedingDeacons.Inventory]*"
+
+      # The executable specification: a gate, and deliberately not counted in
+      # coverage, so the badge keeps meaning what it meant.
+      - name: Specs
+        run: dotnet TheBleedingDeacons.Inventory.Specs/bin/Debug/net10.0/TheBleedingDeacons.Inventory.Specs.dll
+
+      - name: Upload coverage to Coveralls
+        uses: coverallsapp/github-action@8d6379e14d29928660c4ba802d8e85393440b329 # v2.3.8
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          file: coverage/coverage.cobertura.xml
+          format: cobertura
+          fail-on-error: false
+
+      # The proof that Inventory stands alone: a console app that references
+      # nothing else of this suite's.
+      - name: Verify example formatting
+        working-directory: example
+        run: dotnet format Inventory-cli/Inventory-cli.sln --verify-no-changes
+
+      - name: Build example CLI
+        working-directory: example
+        run: dotnet build Inventory-cli/Inventory-cli.sln --configuration Release
+
+  maui:
+    name: MAUI adapter
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Setup Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install the MAUI Android workload
+        run: dotnet workload install maui-android
+
+      # Both targets: net10.0, which serves iOS, Mac Catalyst and Windows, and
+      # net10.0-android.
+      - name: Build Inventory.Maui
+        run: dotnet build TheBleedingDeacons.Inventory.Maui/TheBleedingDeacons.Inventory.Maui.csproj --configuration Release
+
+      - name: Verify formatting
+        run: dotnet format TheBleedingDeacons.Inventory.Maui/TheBleedingDeacons.Inventory.Maui.csproj --verify-no-changes
+
+  semgrep:
+    name: Semgrep
+    runs-on: ubuntu-latest
+
+    # A job of its own, as in freedom-sharp: the build jobs install the .NET
+    # SDK and a MAUI workload, none of which Semgrep needs. `semgrep ci` is
+    # diff-aware on a pull request; which findings block is the Block policy in
+    # Semgrep, not this file.
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Semgrep
+        env:
+          SEMGREP_APP_TOKEN: ${{ secrets.SEMGREP_APP_TOKEN }}
+        run: |
+          if [ -z "${SEMGREP_APP_TOKEN:-}" ]; then
+            echo 'SEMGREP_APP_TOKEN is not set - skipping the scan.'
+            echo 'Set it as an organisation secret to enable this gate.'
+            exit 0
+          fi
+          python3 -m pip install --quiet semgrep==1.174.0
+          semgrep ci

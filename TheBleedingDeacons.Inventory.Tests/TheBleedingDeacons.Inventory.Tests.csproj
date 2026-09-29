@@ -1,0 +1,32 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <!-- xUnit v3 test projects are executables that host Microsoft.Testing.Platform. -->
+    <OutputType>Exe</OutputType>
+    <IsPackable>false</IsPackable>
+    <IsTestProject>true</IsTestProject>
+    <!-- Run through Microsoft.Testing.Platform (not VSTest) under `dotnet test`. -->
+    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="xunit.v3" Version="3.2.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <!-- The Microsoft.Extensions.Logging bridge, to prove what CurrentLogger
+         fixes about it. -->
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <!-- Coverage is collected with the coverlet.console tool around the test
+         executable, as in freedom-sharp: coverlet's collector hooks VSTest,
+         which Microsoft.Testing.Platform does not use. -->
+  </ItemGroup>
+  <ItemGroup>
+    <Using Include="Xunit" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TheBleedingDeacons.Inventory\TheBleedingDeacons.Inventory.csproj" />
+    <ProjectReference Include="..\TheBleedingDeacons.Inventory.Maui\TheBleedingDeacons.Inventory.Maui.csproj" SetTargetFramework="TargetFramework=net10.0" />
+  </ItemGroup>
+</Project>

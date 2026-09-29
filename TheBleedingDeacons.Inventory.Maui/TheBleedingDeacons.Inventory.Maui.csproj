@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    The MAUI half of Inventory: builder.UseInventory(), the standard enrichers
+    and local sinks, a SecureStorage settings store, and on Android the logcat
+    sink and the Java-side crash hook.
+
+    Two targets, and that is enough for every head. MAUI's own packages ship a
+    plain net10.0 build beside the platform ones and an app resolves the right
+    one per head, so the net10.0 build here serves iOS, Mac Catalyst and
+    Windows — Register's and Link's other heads — through the same Essentials
+    and hosting APIs. Only Android has something of its own to add, so only
+    Android gets a build of its own. It also means CI needs nothing beyond the
+    Android workload, as freedom-sharp's does.
+  -->
+
+  <PropertyGroup>
+    <TargetFrameworks>net10.0;net10.0-android</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <SupportedOSPlatformVersion Condition="'$(TargetFramework)' == 'net10.0-android'">24.0</SupportedOSPlatformVersion>
+
+    <PackageId>Inventory.Maui</PackageId>
+    <Version>0.1.0</Version>
+    <Authors>The Bleeding Deacons</Authors>
+    <Company>The Bleeding Deacons</Company>
+    <Product>Inventory for .NET MAUI</Product>
+    <Description>MAUI defaults for Inventory: builder.UseInventory() with device enrichers, rolling log files, a SecureStorage settings store, and on Android a logcat sink and Java-side crash logging.</Description>
+    <PackageTags>serilog;logging;betterstack;maui;android;inventory</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <RepositoryType>git</RepositoryType>
+    <RepositoryUrl>https://github.com/bleedingdeacons/inventory</RepositoryUrl>
+    <PackageProjectUrl>https://github.com/bleedingdeacons/inventory</PackageProjectUrl>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+    <Copyright>Don't take yourself too damn seriously</Copyright>
+    <DebugType>embedded</DebugType>
+    <PublishRepositoryUrl>true</PublishRepositoryUrl>
+    <EmbedUntrackedSources>true</EmbedUntrackedSources>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <None Include="..\README.md" Pack="true" PackagePath="\" />
+  </ItemGroup>
+
+  <!-- Android's own code, only in Android's build. -->
+  <ItemGroup Condition="'$(TargetFramework)' != 'net10.0-android'">
+    <Compile Remove="Platforms\Android\**" />
+    <None Include="Platforms\Android\**" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Maui.Controls" Version="10.0.90" />
+    <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.1.1" />
+    <PackageReference Include="Serilog.Sinks.Debug" Version="3.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="7.0.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\TheBleedingDeacons.Inventory\TheBleedingDeacons.Inventory.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <InternalsVisibleTo Include="TheBleedingDeacons.Inventory.Tests" />
+  </ItemGroup>
+
+</Project>

@@ -1,0 +1,90 @@
+name: Release
+
+# freedom-sharp's release: a v* tag runs the gates, packs Inventory and
+# Inventory.Maui at the tag's version, pushes both to GitHub Packages and
+# attaches them to a GitHub Release. Cut a tag with scripts/release.ps1.
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+# Write access asked for here rather than a PAT. GitHub Packages accepts
+# GITHUB_TOKEN with packages: write for a package owned by this repository, so
+# there is no PACKAGES_TOKEN secret to create or let expire.
+permissions:
+  contents: write   # the GitHub Release
+  packages: write   # the NuGet push
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Derive version from tag
+        id: version
+        run: |
+          VERSION="${GITHUB_REF_NAME#v}"
+          if ! printf '%s' "$VERSION" | grep -Eq '^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$'; then
+            echo "::error::Tag '$GITHUB_REF_NAME' is not of the form v<major>.<minor>.<patch>[-prerelease]"
+            exit 1
+          fi
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          case "$VERSION" in
+            *-*) echo "prerelease=true"  >> "$GITHUB_OUTPUT" ;;
+            *)   echo "prerelease=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - name: Setup Java
+        uses: actions/setup-java@dd06d9cba3e5552c54d9f8ea23572deb30010f7c # v6.0.0
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@a98b56852c35b8e3190ac28c8c2271da59106c68 # v6.0.0
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install the MAUI Android workload
+        run: dotnet workload install maui-android
+
+      # The same gates as ci.yml: a tag on a commit whose gates fail publishes nothing.
+      - name: Build and test
+        run: |
+          dotnet build TheBleedingDeacons.Inventory.Tests/TheBleedingDeacons.Inventory.Tests.csproj --configuration Debug
+          dotnet build TheBleedingDeacons.Inventory.Specs/TheBleedingDeacons.Inventory.Specs.csproj --configuration Debug
+          dotnet TheBleedingDeacons.Inventory.Tests/bin/Debug/net10.0/TheBleedingDeacons.Inventory.Tests.dll
+          dotnet TheBleedingDeacons.Inventory.Specs/bin/Debug/net10.0/TheBleedingDeacons.Inventory.Specs.dll
+
+      - name: Pack
+        run: |
+          for project in TheBleedingDeacons.Inventory TheBleedingDeacons.Inventory.Maui; do
+            dotnet pack "$project/$project.csproj" \
+              --configuration Release \
+              -p:Version=${{ steps.version.outputs.version }} \
+              -p:ContinuousIntegrationBuild=true \
+              --output artifacts
+          done
+
+      - name: Push to GitHub Packages
+        run: >
+          dotnet nuget push "artifacts/*.nupkg"
+          --source https://nuget.pkg.github.com/${{ github.repository_owner }}/index.json
+          --api-key ${{ secrets.GITHUB_TOKEN }}
+          --skip-duplicate
+
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: >
+          gh release create "$GITHUB_REF_NAME"
+          artifacts/*.nupkg
+          --title "$GITHUB_REF_NAME"
+          --generate-notes
+          ${{ steps.version.outputs.prerelease == 'true' && '--prerelease' || '' }}

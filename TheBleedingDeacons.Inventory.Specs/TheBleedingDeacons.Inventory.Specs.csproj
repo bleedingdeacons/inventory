@@ -1,0 +1,68 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+	<!--
+		The executable specification for Inventory.
+
+		freedom-sharp's arrangement, which was Link's: Reqnroll over xUnit v3,
+		with Shouldly. The feature files are the readable half — what is kept,
+		what is shipped and when, what is dropped — and the steps under Steps/
+		bind them to a real LogShipper, real buffer files and a real durable
+		sink, with only Better Stack faked.
+
+		It sits beside Inventory.Tests rather than replacing it. The xUnit suite
+		is where the edges live and what drives the coverage badge; this is
+		where the behaviour lives, in the words the README uses. It is a CI gate
+		and deliberately not counted in coverage.
+
+		The fake Better Stack and the small doubles are linked from
+		Inventory.Tests rather than copied: nothing can reference a test
+		project, and two copies would drift.
+
+		Scenarios tagged @manual @ignore are on-device acceptance criteria —
+		logcat, a Java-side crash — that no test host can reach.
+	-->
+
+	<PropertyGroup>
+		<TargetFramework>net10.0</TargetFramework>
+		<RootNamespace>TheBleedingDeacons.Inventory.Specs</RootNamespace>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<Nullable>enable</Nullable>
+		<OutputType>Exe</OutputType>
+		<IsPackable>false</IsPackable>
+		<IsTestProject>true</IsTestProject>
+		<TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+		<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
+		<!-- Reqnroll generates a .feature.cs behind every feature file, and
+		     generated code has no business failing a style rule. -->
+		<RunAnalyzers>false</RunAnalyzers>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
+		<PackageReference Include="Reqnroll.xunit.v3" Version="3.3.4" />
+		<PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
+		<PackageReference Include="Shouldly" Version="4.3.0" />
+		<PackageReference Include="xunit.v3" Version="3.2.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Using Include="Xunit" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\FakeBetterStack.cs" Link="Support\Linked\FakeBetterStack.cs" />
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\Received.cs" Link="Support\Linked\Received.cs" />
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\ShippedEvent.cs" Link="Support\Linked\ShippedEvent.cs" />
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\CollectingSink.cs" Link="Support\Linked\CollectingSink.cs" />
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\Eventually.cs" Link="Support\Linked\Eventually.cs" />
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\GlobalLogScope.cs" Link="Support\Linked\GlobalLogScope.cs" />
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\InMemorySettingsStore.cs" Link="Support\Linked\InMemorySettingsStore.cs" />
+		<Compile Include="..\TheBleedingDeacons.Inventory.Tests\Support\TempDirectory.cs" Link="Support\Linked\TempDirectory.cs" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="..\TheBleedingDeacons.Inventory\TheBleedingDeacons.Inventory.csproj" />
+	</ItemGroup>
+
+</Project>
