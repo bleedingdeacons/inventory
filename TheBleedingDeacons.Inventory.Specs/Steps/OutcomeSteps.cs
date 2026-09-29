@@ -89,7 +89,8 @@ public sealed class OutcomeSteps(World world)
 
 	// ── On the device ─────────────────────────────────────────────────
 	[Then(@"^""(.+)"" is on the device$")]
-	public void OnTheDevice(string message) => world.OnDevice.Messages.ShouldContain(message);
+	public void OnTheDevice(string message) =>
+		world.OnDevice.Messages.ShouldContain(m => string.Equals(m, message, StringComparison.Ordinal));
 
 	[Then(@"^""(.+)"" is on the device once$")]
 	public void OnTheDeviceOnce(string message) =>
@@ -103,7 +104,7 @@ public sealed class OutcomeSteps(World world)
 	public void LoggingCarriesOn()
 	{
 		Log.Information("Still logging");
-		world.OnDevice.Messages.ShouldContain("Still logging");
+		world.OnDevice.Messages.ShouldContain(m => string.Equals(m, "Still logging", StringComparison.Ordinal));
 	}
 
 	// ── Told settings ─────────────────────────────────────────────────
