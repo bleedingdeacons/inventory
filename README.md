@@ -96,6 +96,12 @@ three:
 | a valid configuration | **Shipping** | Disk first, then Better Stack every 5 seconds. What was held goes too. |
 | an invalid one | **LocalOnly** | Told not to ship. The Better Stack sink goes and the buffer is deleted, because nothing in it is going anywhere. |
 
+Valid means a source token and an **https** endpoint; a bare hostname gets
+`https://` on the way in. An `http://` endpoint is invalid, because the token
+travels as a bearer credential on every batch and would go in cleartext.
+Link had closed that gap; 0.1.0 reopened it by taking Register's rule, and
+0.1.1 closes it again.
+
 The difference between the first and the last is the point:
 
 - **Not told yet** is a device that has not signed in. Its failures are

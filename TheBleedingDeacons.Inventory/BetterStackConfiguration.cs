@@ -53,15 +53,22 @@ public sealed class BetterStackConfiguration
 
 	/// <summary>
 	/// Whether this names somewhere logs can actually be shipped: a token, and
-	/// an absolute http or https endpoint.
+	/// an absolute https endpoint.
 	/// </summary>
-	/// <returns>True when both are present and the endpoint parses.</returns>
+	/// <remarks>
+	/// <b>https only.</b> The source token travels as a bearer credential on
+	/// every batch, and <c>http://</c> would send it in cleartext without
+	/// anybody saying so. Link had closed that; Register's copy, which 0.1.0
+	/// was taken from, had not. An <c>http://</c> endpoint therefore reads as
+	/// not valid, so a shipper told it drops what it holds rather than ship
+	/// under a token anybody on the path can read.
+	/// </remarks>
+	/// <returns>True when both are present and the endpoint is an absolute https URI.</returns>
 	public bool IsValid() =>
 		!string.IsNullOrWhiteSpace(SourceToken)
 		&& !string.IsNullOrWhiteSpace(Endpoint)
 		&& Uri.TryCreate(Endpoint, UriKind.Absolute, out var parsed)
-		&& (string.Equals(parsed.Scheme, Uri.UriSchemeHttp, StringComparison.Ordinal)
-			|| string.Equals(parsed.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal));
+		&& string.Equals(parsed.Scheme, Uri.UriSchemeHttps, StringComparison.Ordinal);
 
 	/// <summary>
 	/// A copy fit for a log line: the endpoint as is, the token masked.

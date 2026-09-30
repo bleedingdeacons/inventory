@@ -40,14 +40,24 @@ public sealed class BetterStackConfigurationTests
 
 	[Theory]
 	[InlineData("https://in.logs.example", "t", true)]
-	[InlineData("http://in.logs.example", "t", true)]
+	[InlineData("s123456.betterstackdata.com", "t", true)]
 	[InlineData("https://in.logs.example", "", false)]
 	[InlineData("https://in.logs.example", "  ", false)]
 	[InlineData("", "t", false)]
 	[InlineData("ftp://in.logs.example", "t", false)]
 	[InlineData("https://", "t", false)]
-	public void IsValidOnlyWithATokenAndAnHttpEndpoint(string endpoint, string token, bool valid) =>
+	public void IsValidOnlyWithATokenAndAnHttpsEndpoint(string endpoint, string token, bool valid) =>
 		Assert.Equal(valid, Config(endpoint, token).IsValid());
+
+	/// <summary>
+	/// The token is a bearer credential on every batch; http would send it in
+	/// cleartext. Link had closed this, and 0.1.0 reopened it.
+	/// </summary>
+	[Theory]
+	[InlineData("http://in.logs.example")]
+	[InlineData("http://localhost:9000")]
+	public void RefusesToSendTheTokenInCleartext(string endpoint) =>
+		Assert.False(Config(endpoint).IsValid());
 
 	[Fact]
 	public void MasksTheTokenForLogging()

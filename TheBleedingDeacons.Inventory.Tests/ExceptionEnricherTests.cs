@@ -89,6 +89,22 @@ public sealed class ExceptionEnricherTests
 		Assert.Contains("two", chain, StringComparison.Ordinal);
 	}
 
+	/// <summary>
+	/// A branch that appears twice is reported once. Flattening plus custom
+	/// exception types have been known to loop, and an enricher that spins is
+	/// worse than one that reports less. From Link's suite.
+	/// </summary>
+	[Fact]
+	public void ReportsARepeatedBranchOnce()
+	{
+		var shared = new TimeoutException("shared");
+
+		var chain = Text(Enrich(new AggregateException(shared, shared, new InvalidOperationException("other"))), "ExceptionInnerChain");
+
+		Assert.Equal(1, chain.Split("System.TimeoutException: shared", StringSplitOptions.None).Length - 1);
+		Assert.Contains("other", chain, StringComparison.Ordinal);
+	}
+
 	[Fact]
 	public void StopsAtTheDepthLimit()
 	{
