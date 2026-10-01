@@ -12,11 +12,11 @@
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageReference Include="xunit.v3" Version="4.0.1" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.0" />
     <!-- The Microsoft.Extensions.Logging bridge, to prove what CurrentLogger
          fixes about it. -->
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.12" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
     <!-- Coverage is collected with the coverlet.console tool around the test
          executable, as in freedom-sharp: coverlet's collector hooks VSTest,
