@@ -7,13 +7,12 @@
     <OutputType>Exe</OutputType>
     <IsPackable>false</IsPackable>
     <IsTestProject>true</IsTestProject>
-    <!-- Run through Microsoft.Testing.Platform (not VSTest) under `dotnet test`. -->
-    <TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
+    <!-- Run through Microsoft.Testing.Platform (not VSTest); global.json opts `dotnet test` in. -->
     <UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
   </PropertyGroup>
   <ItemGroup>
-    <PackageReference Include="xunit.v3" Version="3.2.2" />
-    <PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+    <PackageReference Include="xunit.v3" Version="4.0.2" />
+    <PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
     <!-- The Microsoft.Extensions.Logging bridge, to prove what CurrentLogger
          fixes about it. -->
     <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.10" />
