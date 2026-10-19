@@ -30,7 +30,6 @@
 		<OutputType>Exe</OutputType>
 		<IsPackable>false</IsPackable>
 		<IsTestProject>true</IsTestProject>
-		<TestingPlatformDotnetTestSupport>true</TestingPlatformDotnetTestSupport>
 		<UseMicrosoftTestingPlatformRunner>true</UseMicrosoftTestingPlatformRunner>
 		<!-- Reqnroll generates a .feature.cs behind every feature file, and
 		     generated code has no business failing a style rule. -->
@@ -42,8 +41,8 @@
 		<PackageReference Include="Reqnroll.xunit.v3" Version="3.3.4" />
 		<PackageReference Include="Serilog.Extensions.Logging" Version="10.0.0" />
 		<PackageReference Include="Shouldly" Version="4.3.0" />
-		<PackageReference Include="xunit.v3" Version="3.2.2" />
-		<PackageReference Include="xunit.runner.visualstudio" Version="3.1.5" />
+		<PackageReference Include="xunit.v3" Version="4.0.2" />
+		<PackageReference Include="xunit.runner.visualstudio" Version="4.0.1" />
 	</ItemGroup>
 
 	<ItemGroup>

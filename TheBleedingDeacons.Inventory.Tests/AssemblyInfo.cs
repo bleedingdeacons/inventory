@@ -2,4 +2,4 @@
 
 // Every test here that builds a pipeline swaps Serilog's global Log.Logger,
 // which is one static per process. Run one at a time.
-[assembly: CollectionBehavior(DisableTestParallelization = true)]
+[assembly: Xunit.v3.Parallelization(Mode = Xunit.Sdk.ParallelMode.None)]
