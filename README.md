@@ -269,6 +269,28 @@ Register's copy of the enricher dropped a level under each aggregate
 branch, so an `HttpRequestException` hid the `TimeoutException` that said
 what went wrong. Link had fixed that, and this is Link's.
 
+## Redaction
+
+An app that must keep something out of its logs, such as email addresses,
+passes `Redact`: given any text, the same text with that replaced.
+
+```csharp
+Redact = new EmailRedactor(key).Redact,
+```
+
+It reaches everything every sink writes, the local files and logcat as
+well as Better Stack:
+
+- every property, through a `RedactingEnricher` added after Inventory's own
+  enrichers, so it covers the exception fields above and the log context;
+- the exception itself, through a `RedactingSink` in front of each sink,
+  which hands on a `RedactedException` whose `ToString()` is the original's
+  redacted. Its type, message and stack read as they did.
+
+An enricher in `Configure` runs before Inventory's, so it cannot do this.
+A redaction should return the same instance when there is nothing to
+replace; values that come back unchanged are left as they were.
+
 ## Local files
 
 | Build | Level | File | Kept | Also |
