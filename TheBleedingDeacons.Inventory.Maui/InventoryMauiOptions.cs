@@ -78,4 +78,20 @@ public sealed class InventoryMauiOptions
 	/// seconds, before it can know where to ship, are worth having.
 	/// </summary>
 	public bool HoldUntilConfigured { get; init; } = true;
+
+	/// <summary>
+	/// Gets the app's redaction: given any text, the same text with what must
+	/// not be logged replaced, or the same instance when there is nothing to
+	/// replace. Null, the default, redacts nothing.
+	/// </summary>
+	/// <remarks>
+	/// Applied to everything every sink writes — the local files, logcat and
+	/// Better Stack alike: every property, through a
+	/// <see cref="Redaction.RedactingEnricher"/> added after Inventory's own
+	/// enrichers, and an event's exception text, through a
+	/// <see cref="Redaction.RedactingSink"/> in front of each sink. An
+	/// enricher in <see cref="Configure"/> runs first, and so cannot reach what
+	/// Inventory's exception enricher and the log context add.
+	/// </remarks>
+	public Func<string, string>? Redact { get; init; }
 }

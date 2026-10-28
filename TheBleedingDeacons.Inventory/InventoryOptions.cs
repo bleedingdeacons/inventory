@@ -80,4 +80,18 @@ public sealed class InventoryOptions
 	/// </summary>
 	public Action<string>? SelfLog { get; init; } =
 		message => System.Diagnostics.Debug.WriteLine($"[Serilog] {message}");
+
+	/// <summary>
+	/// Gets the app's redaction for text bound for Better Stack: given any
+	/// text, the same text with what must not leave the device replaced, or
+	/// the same instance when there is nothing to replace. Null redacts
+	/// nothing.
+	/// </summary>
+	/// <remarks>
+	/// The shipper applies it to an event's exception text, through
+	/// <see cref="Redaction.RedactingSink"/>. The properties are the base
+	/// pipeline's to redact, with <see cref="Redaction.RedactingEnricher"/>
+	/// added last; <c>UseInventory</c> does both from one option.
+	/// </remarks>
+	public Func<string, string>? Redact { get; init; }
 }

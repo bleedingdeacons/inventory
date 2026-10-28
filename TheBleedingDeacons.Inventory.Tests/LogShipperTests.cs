@@ -36,7 +36,8 @@ public sealed class LogShipperTests : IDisposable
 	private LogShipper Shipper(
 		TimeSpan? shipping = null,
 		bool flushOnError = false,
-		Func<LoggerConfiguration>? baseLogger = null)
+		Func<LoggerConfiguration>? baseLogger = null,
+		Func<string, string>? redact = null)
 	{
 		var shipper = new LogShipper(
 			baseLogger ?? (() =>
@@ -51,6 +52,7 @@ public sealed class LogShipperTests : IDisposable
 				HoldingPeriod = TimeSpan.FromMilliseconds(100),
 				FlushOnError = flushOnError,
 				SelfLog = null,
+				Redact = redact,
 			},
 			new HttpClient(_betterStack),
 			_clock);
@@ -94,6 +96,21 @@ public sealed class LogShipperTests : IDisposable
 		Assert.Equal("src-token", post.Token);
 		Assert.Equal("application/x-ndjson", post.MediaType);
 		Assert.Equal("INFO", post.Events.Single(e => string.Equals(e.Message, "Message 4242 delivered", StringComparison.Ordinal)).Level);
+	}
+
+	[Fact]
+	public async Task ShipsAnExceptionsTextRedacted()
+	{
+		var shipper = Shipper(redact: text => text.Replace("someone@example.org", "email:0000", StringComparison.Ordinal));
+
+		shipper.Reconfigure(Ship);
+		Log.Error(new InvalidOperationException("No account for someone@example.org"), "Sign-in failed");
+
+		Assert.True(await Eventually.True(() => _betterStack.Containing("Sign-in failed").Count == 1));
+
+		var raw = _betterStack.PostCarrying("Sign-in failed").Events.Single(e => string.Equals(e.Message, "Sign-in failed", StringComparison.Ordinal)).Raw.GetRawText();
+		Assert.DoesNotContain("someone@example.org", raw, StringComparison.Ordinal);
+		Assert.Contains("No account for email:0000", raw, StringComparison.Ordinal);
 	}
 
 	[Fact]
