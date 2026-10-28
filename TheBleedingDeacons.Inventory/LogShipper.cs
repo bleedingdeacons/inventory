@@ -3,6 +3,7 @@
 using Serilog;
 using Serilog.Core;
 using TheBleedingDeacons.Inventory.BetterStack;
+using TheBleedingDeacons.Inventory.Redaction;
 using TheBleedingDeacons.Inventory.Sinks;
 
 namespace TheBleedingDeacons.Inventory;
@@ -127,7 +128,7 @@ public sealed class LogShipper : ILogShipper, IDisposable
 					// Not told yet. Written to the same buffer the real sink reads,
 					// so what is held now ships when the app is told.
 					state = ShippingState.Holding;
-					builder = builder.WriteTo.DurableHttpUsingFileSizeRolledBuffers(
+					builder = builder.WriteToRedacted(_options.Redact, wt => wt.DurableHttpUsingFileSizeRolledBuffers(
 						requestUri: HoldingUri,
 						bufferBaseFileName: BufferBaseFileName(),
 						bufferFileSizeLimitBytes: _options.HoldingBufferFileSizeLimitBytes,
@@ -137,12 +138,12 @@ public sealed class LogShipper : ILogShipper, IDisposable
 						period: _options.HoldingPeriod,
 						textFormatter: new BetterStackTextFormatter(),
 						batchFormatter: new BetterStackNdjsonBatchFormatter(),
-						httpClient: new HoldingHttpClient());
+						httpClient: new HoldingHttpClient()));
 				}
 				else if (configuration.IsValid())
 				{
 					state = ShippingState.Shipping;
-					builder = builder.WriteTo.DurableHttpUsingFileSizeRolledBuffers(
+					builder = builder.WriteToRedacted(_options.Redact, wt => wt.DurableHttpUsingFileSizeRolledBuffers(
 						requestUri: configuration.Endpoint,
 						bufferBaseFileName: BufferBaseFileName(),
 						bufferFileSizeLimitBytes: _options.BufferFileSizeLimitBytes,
@@ -152,7 +153,7 @@ public sealed class LogShipper : ILogShipper, IDisposable
 						period: _options.ShippingPeriod,
 						textFormatter: new BetterStackTextFormatter(),
 						batchFormatter: new BetterStackNdjsonBatchFormatter(),
-						httpClient: new BetterStackHttpClient(configuration.SourceToken, _httpClient));
+						httpClient: new BetterStackHttpClient(configuration.SourceToken, _httpClient)));
 				}
 				else
 				{

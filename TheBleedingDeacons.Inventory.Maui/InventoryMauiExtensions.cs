@@ -6,9 +6,11 @@ using Microsoft.Maui.Devices;
 using Microsoft.Maui.Hosting;
 using Microsoft.Maui.Storage;
 using Serilog;
+using Serilog.Configuration;
 using Serilog.Events;
 using TheBleedingDeacons.Inventory.BetterStack;
 using TheBleedingDeacons.Inventory.Enrichment;
+using TheBleedingDeacons.Inventory.Redaction;
 
 namespace TheBleedingDeacons.Inventory.Maui;
 
@@ -61,7 +63,7 @@ public static class InventoryMauiExtensions
 		// upgrading onto this ships what it was already holding.
 		var shipper = new LogShipper(
 			() => BaseConfiguration(options, logDirectory, appVersion),
-			new InventoryOptions { BufferDirectory = Path.Combine(logDirectory, "betterstack-buffer") },
+			new InventoryOptions { BufferDirectory = Path.Combine(logDirectory, "betterstack-buffer"), Redact = options.Redact },
 			BetterStackHttp.CreateClient(options.UserAgent ?? $"{Token(options.Application)}/{Token(SafeVersion(appVersion))}"));
 
 		try
@@ -136,51 +138,61 @@ public static class InventoryMauiExtensions
 			.Enrich.WithProperty("DeviceLabel", deviceLabel)
 			.Enrich.With<ExceptionEnricher>();
 
+		// Last, so it reaches what the exception enricher and the log context
+		// added; see InventoryMauiOptions.Redact.
+		if (options.Redact is { } redact)
+		{
+			cfg.Enrich.With(new RedactingEnricher(redact));
+		}
+
 		var prefix = options.LogFilePrefix ?? options.Application.ToLowerInvariant();
 
-		// shared: true because a second writer in the same process — Link's
-		// push service — writes here too. The sink must not itself become a
-		// source of failure, and the cost is a little buffering.
-		if (options.DeveloperSinks)
+		// Every local sink behind the redaction, so an exception's text is
+		// redacted in the files and logcat as it is in Better Stack.
+		return cfg.WriteToRedacted(options.Redact, wt =>
 		{
-			cfg.WriteTo.File(
+			// shared: true because a second writer in the same process — Link's
+			// push service — writes here too. The sink must not itself become a
+			// source of failure, and the cost is a little buffering.
+			if (options.DeveloperSinks)
+			{
+				wt.File(
 					Path.Combine(logDirectory, $"{prefix}-debug-.log"),
 					rollingInterval: RollingInterval.Day,
 					retainedFileCountLimit: 21,
 					shared: true,
-					formatProvider: System.Globalization.CultureInfo.InvariantCulture)
-				.WriteTo.Debug(formatProvider: System.Globalization.CultureInfo.InvariantCulture);
+					formatProvider: System.Globalization.CultureInfo.InvariantCulture);
+				wt.Debug(formatProvider: System.Globalization.CultureInfo.InvariantCulture);
 
-			// The console sink sets Console.ForegroundColor, which throws on
-			// Android and iOS; every event would land in SelfLog. Desktop only.
-			if (DeviceInfo.Platform == DevicePlatform.WinUI || DeviceInfo.Platform == DevicePlatform.MacCatalyst)
-			{
-				cfg.WriteTo.Console(formatProvider: System.Globalization.CultureInfo.InvariantCulture);
+				// The console sink sets Console.ForegroundColor, which throws on
+				// Android and iOS; every event would land in SelfLog. Desktop only.
+				if (DeviceInfo.Platform == DevicePlatform.WinUI || DeviceInfo.Platform == DevicePlatform.MacCatalyst)
+				{
+					wt.Console(formatProvider: System.Globalization.CultureInfo.InvariantCulture);
+				}
+
+				AddPlatformDeveloperSinks(wt, options);
 			}
-
-			AddPlatformDeveloperSinks(cfg, options);
-		}
-		else
-		{
-			cfg.WriteTo.File(
-				Path.Combine(logDirectory, $"{prefix}-.log"),
-				rollingInterval: RollingInterval.Day,
-				retainedFileCountLimit: 7,
-				shared: true,
-				restrictedToMinimumLevel: LogEventLevel.Information,
-				formatProvider: System.Globalization.CultureInfo.InvariantCulture);
-		}
-
-		return cfg;
+			else
+			{
+				wt.File(
+					Path.Combine(logDirectory, $"{prefix}-.log"),
+					rollingInterval: RollingInterval.Day,
+					retainedFileCountLimit: 7,
+					shared: true,
+					restrictedToMinimumLevel: LogEventLevel.Information,
+					formatProvider: System.Globalization.CultureInfo.InvariantCulture);
+			}
+		});
 	}
 
-	private static void AddPlatformDeveloperSinks(LoggerConfiguration cfg, InventoryMauiOptions options)
+	private static void AddPlatformDeveloperSinks(LoggerSinkConfiguration wt, InventoryMauiOptions options)
 	{
 #if ANDROID
 		// Live output on a handset, which there was none of: adb -s <serial> logcat -s <tag>:V
-		cfg.WriteTo.Sink(new LogcatSink(options.LogcatTag ?? options.Application));
+		wt.Sink(new LogcatSink(options.LogcatTag ?? options.Application));
 #else
-		_ = cfg;
+		_ = wt;
 		_ = options;
 #endif
 	}
